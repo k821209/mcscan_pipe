@@ -2,6 +2,7 @@ from __future__ import print_function
 import pandas as pd
 import numpy as np
 import sys
+import kang
 def rev_comp(strSeq):
 	dicComp = {'A':'T','T':'A','G':'C','C':'G','N':'N'}
 	strCseq = ''
@@ -21,18 +22,18 @@ dicHD2seq = {}
 for each_bulk in bulk:
     if each_bulk.strip() == '':
         continue
-    genename = each_bulk.split('\n')[0]
+    genename = each_bulk.split('\n')[0].strip()
     seq      = ''.join(each_bulk.split('\n')[1:])
     dicHD2seq[genename] = seq
-
+#print(dicHD2seq.keys())
 file_gff    = sys.argv[2] #'/ref/analysis/stringtie.addcds/my_csv.csv.addgene.gff3.sort.gff3'
 df_gff      = pd.read_csv(file_gff,sep='\t',header=None,comment='#')
 mask        = (df_gff[2] == 'gene')
 df_gff_gene = df_gff[mask]      
-df_gff_gene['genename'] = df_gff[8].apply(lambda x:x.replace('ID=',''))
+df_gff_gene['genename'] = df_gff[8].apply(lambda x: kang.infoparse(x)['ID'])
 mask                    = (df_gff[2] == 'CDS')
 df_gff_cds              = df_gff[mask]      
-df_gff_cds['genename']  = df_gff_cds[8].apply(lambda x : x.replace('Parent=',''))
+df_gff_cds['genename']  = df_gff_cds[8].apply(lambda x : kang.infoparse(x)['Parent'])
 df_gff_cds_index        = df_gff_cds.set_index('genename')
 df_gff_cds_index        = df_gff_cds_index.sort([3], ascending=[1])
 
@@ -75,7 +76,8 @@ df_cds_index         = df_cds.set_index(['gene','transcript'])
 with open('cds.fa','w') as f:
     for ix in df_cds_index.index:
         sub_df = df_cds_index.loc[ix]
-        header = sub_df['transcriptname'].split(';')[1].replace('Name=','')
+        print(sub_df)
+        header = sub_df['transcriptname']
         seq    = sub_df['CDSseq']
         print('>'+header,file=f)
         print(seq,file=f)
